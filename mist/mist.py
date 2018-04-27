@@ -11,6 +11,7 @@ import pandas as pd
 
 logging.basicConfig(filename='.mist.log', level=logging.DEBUG)
 
+
 def arguments():
 
     parser = argparse.ArgumentParser()
@@ -69,15 +70,15 @@ def blast(query_path: Path, genome_path: Path) -> pd.DataFrame:
 
 def parse_blast_results(blast_output: pd.DataFrame) -> pd.DataFrame:
 
-
     def is_contig_truncation(row):
 
         if not row['qlen'] > row['length']:
+
             return False
 
         if row['reverse_complement']:
 
-           return row['sstart'] == row['slen'] or row['send'] == 1
+            return row['sstart'] == row['slen'] or row['send'] == 1
 
         else:
 
@@ -85,12 +86,12 @@ def parse_blast_results(blast_output: pd.DataFrame) -> pd.DataFrame:
 
     def is_correct(row):
 
-        correct = (row['mismatch'] == 0) & \
-                  (row['pident'] == 100) & \
-                  (row['qlen'] == row['slen']) & \
-                  (row['gaps'] == 0)
+        _correct = (row['mismatch'] == 0) & \
+                   (row['pident'] == 100) & \
+                   (row['qlen'] == row['slen']) & \
+                   (row['gaps'] == 0)
 
-        return correct
+        return _correct
 
     blast_output['reverse_complement'] = blast_output.sstart > blast_output.send
 
@@ -103,3 +104,22 @@ def parse_blast_results(blast_output: pd.DataFrame) -> pd.DataFrame:
     blast_output['is_contig_truncation'] = is_truncation
 
     return blast_output
+
+
+def filter_results(blast_output: pd.DataFrame) -> pd.DataFrame:
+
+    # Perfect match
+    if any(blast_output['correct']):
+
+        return blast_output[blast_output['correct']]
+
+    # Highest bitscore
+    else:
+
+        highest_bitscore = max(blast_output['bitscore'])
+
+        return blast_output[blast_output['bitscore'] == highest_bitscore]
+
+
+def json_convert(best_blast_hits: pd.DataFrame) -> None:
+    pass
