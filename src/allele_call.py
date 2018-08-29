@@ -3,11 +3,11 @@ import subprocess
 import io
 import re
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 import pandas as pd
 
 
-def allele_call(genome: Path, genes: List[Path], output: Path):
+def allele_call(genome: Path, genes: Path, output: Path):
 
     blast_results = get_blast_results(genes, genome)
 
@@ -16,6 +16,7 @@ def allele_call(genome: Path, genes: List[Path], output: Path):
 
 def blast(query_path: Path, genome_path: Path) -> pd.DataFrame:
 
+    print('blast', query_path)
     out_format = '6 qseqid sseqid pident length qstart qend sstart send qlen \
                   slen bitscore gaps sseq qseq mismatch'
     
@@ -58,6 +59,9 @@ def parse_blast_results(blast_output: pd.DataFrame) -> pd.DataFrame:
 
         return _correct
 
+    if blast_output.empty:
+        return blast_output
+
     revcomp = blast_output['sstart'] > blast_output['send']
     blast_output['reverse_complement'] = revcomp
 
@@ -70,10 +74,14 @@ def parse_blast_results(blast_output: pd.DataFrame) -> pd.DataFrame:
     return blast_output
 
 
-def filter_result(blast_output: pd.DataFrame) -> pd.DataFrame:
+def filter_result(blast_output: pd.DataFrame) -> Optional[pd.Series]:
+
+    # No Blast match
+    if blast_output.empty:
+        return None
 
     # Perfect match
-    if any(blast_output['correct']):
+    elif any(blast_output['correct']):
 
         best = blast_output[blast_output['correct']]
 
@@ -83,14 +91,14 @@ def filter_result(blast_output: pd.DataFrame) -> pd.DataFrame:
         highest_bitscore = max(blast_output['bitscore'])
         best = blast_output[blast_output['bitscore'] == highest_bitscore]
 
-    longest = best[best['length'] == max(best['length'])]
+    longest = best[best['length'] == max(best['length'])].iloc[0]
 
     return longest
 
 
-def get_blast_results(genes: List[Path], genome: Path) -> List[pd.DataFrame]:
+def get_blast_results(genes: Path, genome: Path) -> List[pd.Series]:
 
-    blast_results = (blast(gene, genome) for gene in genes)
+    blast_results = (blast(gene, genome) for gene in genes.glob('*.fasta'))
 
     parsed_results = (parse_blast_results(blast_out)
                       for blast_out in blast_results)
@@ -100,16 +108,15 @@ def get_blast_results(genes: List[Path], genome: Path) -> List[pd.DataFrame]:
     return filtered_results
 
 
-def json_convert(genes: List[Path], best_blast_hits: List[pd.DataFrame],
+def json_convert(genes_dir: Path, best_blast_hits: List[pd.Series],
                  json_out: Path) -> None:
 
     def marker_match(hit):
 
         if hit['correct'].item():
-            return re.sub('\D*(\d+)', '\\1', hit['qseqid'].item())
+            return re.sub('\D*(\d+)', '\\1',
+                          string=str(hit['qseqid'].item()))
         return None
-
-    results = {}
 
     def unpack_value(value):
 
@@ -121,11 +128,20 @@ def json_convert(genes: List[Path], best_blast_hits: List[pd.DataFrame],
 
         return out
 
+    results = {}
+
+    genes = list(genes_dir.glob('*.fasta'))
+
     for gene_path, blast_hit in zip(genes, best_blast_hits):
 
         gene = gene_path.stem
 
+        if blast_hit is None:
+            results[gene] = {'BlastResult': False}
+            continue
+
         result = {
+            'BlastResult':          True,
             'Mismatches':           blast_hit['mismatch'],
             'QueryAln':             blast_hit['qseq'],
             'SubjAln':              blast_hit['sseq'],

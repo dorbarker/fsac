@@ -3,7 +3,7 @@ import sys
 from pathlib import Path
 
 from src.allele_call import allele_call
-
+from src.update import update_directory
 
 def arguments():
 
@@ -23,11 +23,6 @@ def arguments():
                             required=True,
                             help='Input genome')
 
-    allelecall.add_argument('-t', '--test',
-                            type=Path,
-                            required=True,
-                            help='Test info file')
-
     allelecall.add_argument('-a', '--alleles',
                             type=Path,
                             required=True,
@@ -37,6 +32,24 @@ def arguments():
                             type=Path,
                             default=sys.stdout,
                             help='JSON output filename [-]')
+
+
+    ### Allele Updating ###
+    update = subparsers.add_parser('update',
+                                   help='Update allele definitions')
+
+    update.set_defaults(func=update_results)
+
+    update.add_argument('-a', '--alleles',
+                        type=Path,
+                        required=True,
+                        help='Alleles directory')
+
+    update.add_argument('-j', '--json-dir',
+                        type=Path,
+                        required=True,
+                        help='Directory containing JSON result files')
+
 
     args = parser.parse_args()
 
@@ -56,8 +69,11 @@ def main():
 
 def call_alleles(args):
 
-    allele_call(args.input, args.genes, args.json_out)
+    allele_call(args.input, args.alleles, args.json_out)
 
+def update_results(args):
+
+    update_directory(args.json_dir, args.alleles)
 
 if __name__ == '__main__':
     main()

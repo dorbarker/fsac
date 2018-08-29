@@ -15,28 +15,54 @@ def update_locus(gene: Dict[str, Union[str, int, bool, float]],
     :return: Tuple of sequence and new allele designation
     """
 
-    last_allele = sorted(known_alleles.values(), key=int)[-1]
-
-    next_allele = str(int(last_allele) + 1)
-
     if gene['CorrectMarkerMatch'] or gene['IsContigTruncation']:
 
-        return None
+        return None, None
 
     seq = gene['SubjAln'].replace('-', '')
 
-    known_alleles[seq] = next_allele
+    try:
+        allele_name = known_alleles[seq]
 
-    return seq, next_allele
+    except KeyError:
+
+        last_allele = sorted(known_alleles.values(), key=int)[-1]
+
+        allele_name = str(int(last_allele) + 1)
+
+    return seq, allele_name
 
 
-def update_genome():
+def update_genome(genome, genes_dir: Path):
 
-    pass
+    for gene_name in genome:
 
+        gene = genome[gene_name]
 
-def update_directory():
-    pass
+        gene_path = genes_dir / gene_name + '.fasta'
+
+        known_alleles = get_known_alleles(gene_path)
+
+        seq, name = update_locus(gene, known_alleles)
+
+        if seq is None or name is None:
+            continue
+
+        # TODO ensure null matches are handled appropriately
+        gene['Mismatches'] = 0
+        gene['Gaps'] = 0
+        gene['QueryName'] = name
+        gene['PercentIdentity'] = 100
+        gene['MarkerMatch'] = name
+        gene['CorrectMarkerMatch'] = True
+
+        genome[gene_name] = gene
+
+def update_directory(results_dir: Path, genes_dir: Path):
+
+    for genome in results_dir.glob('*.json'):
+
+        update_genome(genome, genes_dir)
 
 
 def get_known_alleles(alleles_fasta: Path) -> Dict[str, str]:
