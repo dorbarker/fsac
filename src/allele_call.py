@@ -7,7 +7,7 @@ from typing import List, Optional
 import pandas as pd
 
 
-def allele_call(genome: Path, genes: Path, output: Path):
+def allele_call(genome: Path, genes: Path, output: Path) -> None:
 
     blast_results = get_blast_results(genes, genome)
 
@@ -16,7 +16,6 @@ def allele_call(genome: Path, genes: Path, output: Path):
 
 def blast(query_path: Path, genome_path: Path) -> pd.DataFrame:
 
-    print('blast', query_path)
     out_format = '6 qseqid sseqid pident length qstart qend sstart send qlen \
                   slen bitscore gaps sseq qseq mismatch'
     
@@ -111,10 +110,12 @@ def get_blast_results(genes: Path, genome: Path) -> List[pd.Series]:
 def json_convert(genes_dir: Path, best_blast_hits: List[pd.Series],
                  json_out: Path) -> None:
 
-    def marker_match(hit):
+    def marker_match(hit) -> Optional[str]:
+        """Extract the allele number from FASTA header"""
 
         if hit['correct'].item():
-            return re.sub('\D*(\d+)', '\\1',
+            return re.sub(pattern='\D*(\d+)',
+                          repl='\\1',
                           string=str(hit['qseqid'].item()))
         return None
 
