@@ -4,6 +4,8 @@ from pathlib import Path
 
 from src.allele_call import allele_call
 from src.update import update_directory
+from src.tabulate import tabulate_calls
+
 
 def arguments():
 
@@ -51,6 +53,27 @@ def arguments():
                         help='Directory containing JSON result files')
 
 
+    ### Tabulation ###
+    tabulate = subparsers.add_parser('tabulate',
+                                     help='Create a table from JSON results')
+
+    tabulate.set_defaults(func=tabulate_allele_calls)
+
+    tabulate.add_argument('-j', '--json-dir',
+                          type=Path,
+                          required=True,
+                          help='Directory containing JSON result files')
+
+    tabulate.add_argument('-o', '--output',
+                          type=Path,
+                          default=sys.stdout,
+                          help='Output filename [-]')
+
+    tabulate.add_argument('-d', '--delimiter',
+                          type=str,
+                          default='\t',
+                          help='Delimiter character [TAB]')
+
     args = parser.parse_args()
 
     if args.func is None:
@@ -71,9 +94,16 @@ def call_alleles(args):
 
     allele_call(args.input, args.alleles, args.json_out)
 
+
 def update_results(args):
 
     update_directory(args.json_dir, args.alleles)
+
+
+def tabulate_allele_calls(args):
+
+    tabulate_calls(args.json_dir, args.output, args.delimiter)
+
 
 if __name__ == '__main__':
     main()

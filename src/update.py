@@ -15,6 +15,9 @@ def update_locus(gene: Dict[str, Union[str, int, bool, float]],
     :return: Tuple of sequence and new allele designation
     """
 
+    if not gene['BlastResult']:
+        return None, None
+
     if gene['CorrectMarkerMatch'] or gene['IsContigTruncation']:
 
         return None, None
