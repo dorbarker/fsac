@@ -92,6 +92,14 @@ def filter_result(blast_output: pd.DataFrame) -> Optional[pd.Series]:
 
     longest = best[best['length'] == max(best['length'])].iloc[0]
 
+    if longest['reverse_complement']:
+
+        start = longest['sstart']
+        end = longest['send']
+
+        longest['sstart'] = end
+        longest['send'] = start
+
     return longest
 
 

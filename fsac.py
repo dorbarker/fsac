@@ -30,7 +30,7 @@ def arguments():
                             required=True,
                             help='Alleles directory')
 
-    allelecall.add_argument('-j', '--json-out',
+    allelecall.add_argument('-o', '--output',
                             type=Path,
                             default=sys.stdout,
                             help='JSON output filename [-]')
@@ -92,7 +92,7 @@ def main():
 
 def call_alleles(args):
 
-    allele_call(args.input, args.alleles, args.json_out)
+    allele_call(args.input, args.alleles, args.output)
 
 
 def update_results(args):
