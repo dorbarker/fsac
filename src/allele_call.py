@@ -1,75 +1,17 @@
-import argparse
 import json
 import subprocess
 import io
-import sys
 import re
-import logging
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 import pandas as pd
 
-logging.basicConfig(filename='.mist.log', level=logging.DEBUG)
 
-
-def arguments():
-
-    parser = argparse.ArgumentParser()
-
-    parser.add_argument('-i', '--input',
-                        type=Path,
-                        required=True,
-                        help='Input genome')
-
-    parser.add_argument('-t', '--test',
-                        type=Path,
-                        required=True,
-                        help='Test info file')
-
-    parser.add_argument('-a', '--alleles',
-                        # nargs='+',
-                        type=Path,
-                        required=True,
-                        help='Alleles directory')
-
-    parser.add_argument('-j', '--json-out',
-                        type=Path,
-                        default=sys.stdout,
-                        help='JSON output filename [-]')
-
-    args = parser.parse_args()
-
-    if not args.test.exists():
-        msg = 'Test file {} does not exist'.format(args.test)
-        logging.error(msg)
-        raise IOError(msg)
-
-    if not args.alleles.exists():
-        msg = 'Allele directory {} does not exist'.format(args.alleles)
-        logging.error(msg)
-        raise IOError(msg)
-
-    try:
-        if args.compatible:
-            raise NotImplementedError
-
-    except NotImplementedError as e:
-        print(e, file=sys.stderr)
-
-    return args
-
-
-def main():
-
-    args = arguments()
-
-    genome = args.input
-
-    genes = list(args.alleles.glob('*.fasta'))
+def allele_call(genome: Path, genes: Path, output: Path) -> None:
 
     blast_results = get_blast_results(genes, genome)
 
-    json_convert(genes, blast_results, args.json_out)
+    json_convert(genes, blast_results, output)
 
 
 def blast(query_path: Path, genome_path: Path) -> pd.DataFrame:
@@ -109,13 +51,16 @@ def parse_blast_results(blast_output: pd.DataFrame) -> pd.DataFrame:
 
     def is_correct(row):
 
-        _correct = (row['mismatch'] == 0) & \
-                   (row['pident'] == 100) & \
-                   (row['qlen'] == row['length']) & \
-                   (row['gaps'] == 0)
+        _correct = all((row['mismatch'] == 0,
+                        row['pident'] == 100,
+                        row['qlen'] == row['length'],
+                        row['gaps'] == 0))
 
         return _correct
-    # print(max(blast_output['pident']))
+
+    if blast_output.empty:
+        return blast_output
+
     revcomp = blast_output['sstart'] > blast_output['send']
     blast_output['reverse_complement'] = revcomp
 
@@ -128,10 +73,14 @@ def parse_blast_results(blast_output: pd.DataFrame) -> pd.DataFrame:
     return blast_output
 
 
-def filter_result(blast_output: pd.DataFrame) -> pd.DataFrame:
+def filter_result(blast_output: pd.DataFrame) -> Optional[pd.Series]:
+
+    # No Blast match
+    if blast_output.empty:
+        return None
 
     # Perfect match
-    if any(blast_output['correct']):
+    elif any(blast_output['correct']):
 
         best = blast_output[blast_output['correct']]
 
@@ -141,14 +90,22 @@ def filter_result(blast_output: pd.DataFrame) -> pd.DataFrame:
         highest_bitscore = max(blast_output['bitscore'])
         best = blast_output[blast_output['bitscore'] == highest_bitscore]
 
-    longest = best[best['length'] == max(best['length'])]
+    longest = best[best['length'] == max(best['length'])].iloc[0]
+
+    if longest['reverse_complement']:
+
+        start = longest['sstart']
+        end = longest['send']
+
+        longest['sstart'] = end
+        longest['send'] = start
 
     return longest
 
 
-def get_blast_results(genes: List[Path], genome: Path) -> List[pd.DataFrame]:
+def get_blast_results(genes: Path, genome: Path) -> List[pd.Series]:
 
-    blast_results = (blast(gene, genome) for gene in genes)
+    blast_results = (blast(gene, genome) for gene in genes.glob('*.fasta'))
 
     parsed_results = (parse_blast_results(blast_out)
                       for blast_out in blast_results)
@@ -158,16 +115,17 @@ def get_blast_results(genes: List[Path], genome: Path) -> List[pd.DataFrame]:
     return filtered_results
 
 
-def json_convert(genes: List[Path], best_blast_hits: List[pd.DataFrame],
+def json_convert(genes_dir: Path, best_blast_hits: List[pd.Series],
                  json_out: Path) -> None:
 
-    def marker_match(hit):
+    def marker_match(hit) -> Optional[str]:
+        """Extract the allele number from FASTA header"""
 
         if hit['correct'].item():
-            return re.sub('\D*(\d+)', '\\1', hit['qseqid'].item())
+            return re.sub(pattern='\D*(\d+)',
+                          repl='\\1',
+                          string=str(hit['qseqid'].item()))
         return None
-
-    results = {}
 
     def unpack_value(value):
 
@@ -179,11 +137,20 @@ def json_convert(genes: List[Path], best_blast_hits: List[pd.DataFrame],
 
         return out
 
+    results = {}
+
+    genes = list(genes_dir.glob('*.fasta'))
+
     for gene_path, blast_hit in zip(genes, best_blast_hits):
 
         gene = gene_path.stem
 
+        if blast_hit is None:
+            results[gene] = {'BlastResult': False}
+            continue
+
         result = {
+            'BlastResult':          True,
             'Mismatches':           blast_hit['mismatch'],
             'QueryAln':             blast_hit['qseq'],
             'SubjAln':              blast_hit['sseq'],
@@ -206,7 +173,3 @@ def json_convert(genes: List[Path], best_blast_hits: List[pd.DataFrame],
 
     with json_out.open('w') as j:
         json.dump(results, j, indent=4)
-
-
-if __name__ == '__main__':
-    main()
