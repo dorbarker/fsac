@@ -36,13 +36,13 @@ def update_locus(gene: Dict[str, Union[str, int, bool, float]],
     return seq, allele_name
 
 
-def update_genome(genome, genes_dir: Path):
+def update_genome(genome_data: Dict[str, GeneData], genes_dir: Path):
 
-    for gene_name in genome:
+    for gene_name in genome_data:
 
-        gene = genome[gene_name]
+        gene = genome_data[gene_name]
 
-        gene_path = genes_dir / gene_name + '.fasta'
+        gene_path = (genes_dir / gene_name).with_suffix('.fasta')
 
         known_alleles = get_known_alleles(gene_path)
 
@@ -59,13 +59,18 @@ def update_genome(genome, genes_dir: Path):
         gene['MarkerMatch'] = name
         gene['CorrectMarkerMatch'] = True
 
-        genome[gene_name] = gene
+        genome_data[gene_name] = gene
+
 
 def update_directory(results_dir: Path, genes_dir: Path):
 
     for genome in results_dir.glob('*.json'):
 
-        update_genome(genome, genes_dir)
+        with genome.open('r') as f:
+
+            genome_data = json.load(f)
+
+            update_genome(genome_data, genes_dir)
 
 
 def get_known_alleles(alleles_fasta: Path) -> Dict[str, str]:
