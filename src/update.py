@@ -2,9 +2,13 @@ from typing import Dict, Optional, Tuple, Union
 from pathlib import Path
 import json
 
+SeqAllele = Tuple[Optional[str], Optional[str]]
+LocusData = Union[str, int, float, bool]
+GeneData = Dict[str, LocusData]
+
 
 def update_locus(gene: Dict[str, Union[str, int, bool, float]],
-                 known_alleles: Dict[str, str]) -> Optional[Tuple[str, str]]:
+                 known_alleles: Dict[str, str]) -> SeqAllele:
     """
     Modifies known_alleles in place with if a new full-length
     allele has been discovered
@@ -104,9 +108,3 @@ def get_known_alleles(alleles_fasta: Path) -> Dict[str, str]:
                 current_sequence.append(current_line)
 
     return known_alleles
-
-def reverse_complement(sequence: str) -> str:
-
-    complements = {'A': 'T', 'T': 'A', 'G': 'C', 'C': 'G', 'N': 'N'}
-
-    return ''.join([complements[nt] for nt in reversed(sequence)])

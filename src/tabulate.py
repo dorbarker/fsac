@@ -32,23 +32,23 @@ def parse_gene_calls_from_json(jsonfile: Path):
     
     with jsonfile.open('r') as f:
         
-        for gene in json.load(f):
+        for gene, locus_data in json.load(f).items():
             
-            if not gene['BlastResult']:
+            if not locus_data['BlastResult']:
                 
                 call = '0'
                 
-            elif gene['IsContigTruncation']:
+            elif locus_data['IsContigTruncation']:
                 
                 call = '-1'
                 
-            elif not gene['CorrectMarkerMatch']:
+            elif not locus_data['CorrectMarkerMatch']:
                 
                 call = '?'
                 
             else:
                 
-                call = gene['MarkerMatch']
+                call = locus_data['MarkerMatch']
 
             yield gene, call
 
