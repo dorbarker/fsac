@@ -65,6 +65,10 @@ def update_genome(genome_data: Dict[str, GeneData], genes_dir: Path):
 
         genome_data[gene_name] = gene
 
+        if not seq in known_alleles:
+
+            update_known_alleles(name, seq, gene_path)
+
 
 def update_directory(results_dir: Path, genes_dir: Path):
 
@@ -87,7 +91,7 @@ def get_known_alleles(alleles_fasta: Path) -> Dict[str, str]:
 
             current_line = line.strip()
 
-            if current_line.strip().startswith('>'):
+            if current_line.startswith('>'):
 
                 try:
 
@@ -108,3 +112,13 @@ def get_known_alleles(alleles_fasta: Path) -> Dict[str, str]:
                 current_sequence.append(current_line)
 
     return known_alleles
+
+
+def update_known_alleles(allele_name: str, sequence: str, fasta: Path) -> None:
+
+    with fasta.open('a') as f:
+
+        record = '\n>{name}\n{sequence}'.format(name=allele_name,
+                                              sequence=sequence)
+
+        f.write(record)
