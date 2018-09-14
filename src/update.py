@@ -1,5 +1,6 @@
 from typing import Dict, Optional, Tuple, Union
 from pathlib import Path
+from contextlib import suppress
 import json
 
 SeqAllele = Tuple[Optional[str], Optional[str]]
@@ -65,13 +66,18 @@ def update_genome(genome_data: Dict[str, GeneData], genes_dir: Path):
 
         genome_data[gene_name] = gene
 
-        if not seq in known_alleles:
+        if seq not in known_alleles:
 
             update_known_alleles(name, seq, gene_path)
 
 
 def update_directory(results_dir: Path, genes_dir: Path):
+    """
 
+    :param results_dir: Directory containing JSON results from fsac
+    :param genes_dir: Directory containing FASTA files input to fsac
+    :return: Void; updates dictionaries in place
+    """
     for genome in results_dir.glob('*.json'):
 
         with genome.open('r') as f:
@@ -93,15 +99,11 @@ def get_known_alleles(alleles_fasta: Path) -> Dict[str, str]:
 
             if current_line.startswith('>'):
 
-                try:
+                with suppress(NameError):
 
                     sequence = ''.join(current_sequence)
 
                     known_alleles[sequence] = current_header
-
-                except NameError:
-
-                    pass
 
                 current_header = current_line.lstrip('>')
 
@@ -119,6 +121,6 @@ def update_known_alleles(allele_name: str, sequence: str, fasta: Path) -> None:
     with fasta.open('a') as f:
 
         record = '\n>{name}\n{sequence}'.format(name=allele_name,
-                                              sequence=sequence)
+                                                sequence=sequence)
 
         f.write(record)
