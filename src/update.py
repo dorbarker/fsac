@@ -70,6 +70,8 @@ def update_genome(genome_data: Dict[str, GeneData], genes_dir: Path):
 
             update_known_alleles(name, seq, gene_path)
 
+    return genome_data
+
 
 def update_directory(results_dir: Path, genes_dir: Path):
     """
@@ -85,6 +87,10 @@ def update_directory(results_dir: Path, genes_dir: Path):
             genome_data = json.load(f)
 
             update_genome(genome_data, genes_dir)
+
+        with genome.open('w') as o:
+
+            json.dump(genome_data, o, indent=4)
 
 
 def get_known_alleles(alleles_fasta: Path) -> Dict[str, str]:
