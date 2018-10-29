@@ -23,7 +23,9 @@ def update_locus(gene: Dict[str, Union[str, int, bool, float]],
     if not gene['BlastResult']:
         return None, None
 
-    if gene['CorrectMarkerMatch'] or gene['IsContigTruncation']:
+    if any((gene['CorrectMarkerMatch'],
+            gene['IsContigTruncation'],
+            gene['PercentLength'] < 1)):
 
         return None, None
 
