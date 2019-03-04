@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 from setuptools import setup, find_packages
 
 setup(
@@ -16,7 +14,7 @@ setup(
 
     entry_points={
         'console_scripts': [
-            'fsac = fsac:main'
+            'fsac=fsac.main:main'
         ]
     }
 )

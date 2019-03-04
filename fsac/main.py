@@ -2,9 +2,9 @@ import argparse
 import sys
 from pathlib import Path
 
-from src.allele_call import allele_call
-from src.update import update_directory
-from src.tabulate import tabulate_calls
+from .allele_call import allele_call
+from .update import update_directory
+from .tabulate import tabulate_calls
 
 
 def arguments():
