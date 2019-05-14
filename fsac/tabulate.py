@@ -29,25 +29,29 @@ def compose_table(jsondir: Path):
 
 
 def parse_gene_calls_from_json(jsonfile: Path):
-    
+
     with jsonfile.open('r') as f:
-        
+
         for gene, locus_data in json.load(f).items():
-            
+
             if not locus_data['BlastResult']:
-                
+
                 call = '0'
-                
+
             elif locus_data['IsContigTruncation']:
-                
+
                 call = '-1'
-                
+
+            elif locus_data['Partial']:
+
+                call = '-2'
+
             elif not locus_data['CorrectMarkerMatch']:
-                
+
                 call = '?'
-                
+
             else:
-                
+
                 call = locus_data['MarkerMatch']
 
             yield gene, call
