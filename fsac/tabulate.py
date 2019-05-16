@@ -42,7 +42,7 @@ def parse_gene_calls_from_json(jsonfile: Path):
 
                 call = '-1'
 
-            elif locus_data['Partial']:
+            elif locus_data['PercentLength'] < 1:
 
                 call = '-2'
 

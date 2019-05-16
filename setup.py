@@ -1,9 +1,10 @@
+from fsac import __version__
 from setuptools import setup, find_packages
 
 setup(
 
     name='fsac',
-    version='0.1',
+    version=__version__,
     packages=find_packages(),
     install_requires=[
         'pandas>=0.22.0'

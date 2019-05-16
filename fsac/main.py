@@ -2,6 +2,7 @@ import argparse
 import sys
 from pathlib import Path
 
+from . import __version__
 from .allele_call import allele_call
 from .update import update_directory
 from .tabulate import tabulate_calls
@@ -10,6 +11,10 @@ from .tabulate import tabulate_calls
 def arguments():
 
     parser = argparse.ArgumentParser()
+
+    parser.add_argument('-v', '--version',
+                        action='store_true',
+                        help='Print version and exit')
 
     parser.set_defaults(func=None)
     subparsers = parser.add_subparsers(title='Commands')
@@ -75,6 +80,10 @@ def arguments():
                           help='Delimiter character [TAB]')
 
     args = parser.parse_args()
+
+    if args.version:
+        print('fsac', __version__)
+        sys.exit(0)
 
     if args.func is None:
         parser.print_help()

@@ -34,7 +34,7 @@ def update_locus(gene: Dict[str, Union[str, int, bool, float]],
 
     # Non-contig trucation
     if gene['PercentLength'] < 1:
-        return gene['SubjAln'], None
+        return None , None
 
     seq = gene['SubjAln'].replace('-', '')
 
@@ -63,12 +63,6 @@ def update_genome(genome_data: Dict[str, GeneData], genes_dir: Path):
         seq, name = update_locus(gene, known_alleles)
 
         if seq is None and name is None:
-            continue
-
-        # If there is a non-contig truncation
-        if seq is not None and name is None:
-
-            gene['Partial'] = True
             continue
 
         # TODO ensure null matches are handled appropriately
