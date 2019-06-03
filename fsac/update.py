@@ -128,6 +128,12 @@ def get_known_alleles(alleles_fasta: Path) -> Dict[str, str]:
 
                 current_sequence.append(current_line)
 
+        else:
+
+            sequence = ''.join(current_sequence)
+
+            known_alleles[sequence] = current_header
+
     return known_alleles
 
 
