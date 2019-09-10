@@ -8,8 +8,10 @@ LocusData = Union[str, int, float, bool]
 GeneData = Dict[str, LocusData]
 
 
-def update_locus(gene: Dict[str, Union[str, int, bool, float]],
-                 known_alleles: Dict[str, str]) -> SeqAllele:
+def update_locus(gene: GeneData,
+                 known_alleles: Dict[str, str],
+                 threshold: int,
+                 genome_path: Path) -> SeqAllele:
     """
     Modifies known_alleles in place with if a new full-length
     allele has been discovered
@@ -25,18 +27,23 @@ def update_locus(gene: Dict[str, Union[str, int, bool, float]],
         return None, None
 
     # Already correct  - nothing to be done
-    if gene['CorrectMarkerMatch']:
+    elif gene['CorrectMarkerMatch']:
         return None, None
 
     # Contig Truncated - nothing to be done
-    if gene['IsContigTruncation']:
+    elif gene['IsContigTruncation']:
         return None, None
 
     # Non-contig trucation
-    if gene['PercentLength'] < 1:
-        return None , None
+    elif gene['PercentLength'] < 1:
+        seq, _ = extend_hit(gene, threshold, genome_path)
 
-    seq = gene['SubjAln'].replace('-', '')
+        if seq is None:
+            return None, None
+
+    # Full-length, previously unobserved allele
+    else:
+        seq = gene['SubjAln'].replace('-', '')
 
     try:
         allele_name = known_alleles[seq]
@@ -48,6 +55,46 @@ def update_locus(gene: Dict[str, Union[str, int, bool, float]],
         allele_name = str(int(last_allele) + 1)
 
     return seq, allele_name
+
+
+def extend_hit(gene, threshold: int, genome_path: Path):
+    """Extend a BLAST hit if the alignment is less than the threshold shy of
+    the expected length. In some cases, it seems that a mismatch near the end
+    of the alignment causes the alignment to not be extended.
+    """
+
+    difference = gene['qlen'] - gene['slen']
+
+    if difference is 0:
+        # handle a complete hit
+        # return early
+        return gene['SubjAln'], gene['MarkerMatch']
+
+    elif difference > threshold:
+        # handle large discrepancy
+        # return early
+        return None, None
+
+    # Open subject FASTA
+    sequences_names = get_known_alleles(genome_path)
+    names_sequences = {value: key for key, value in sequences_names.items()}
+    # Find correct contig
+    contig = names_sequences[gene['sseqid']]
+
+    # Return target_sequence
+    start =  gene['sstart'] - 1
+    end = gene['sstart'] + gene['qlen']
+
+    full_sequence = contig[start : end]
+
+    if gene['ssend'] > len(contig):
+        # handle contig truncation
+        return None, None
+
+    else:
+
+        assert gene['sseq'] in full_sequence
+        return full_sequence, None
 
 
 def update_genome(genome_data: Dict[str, GeneData], genes_dir: Path):
