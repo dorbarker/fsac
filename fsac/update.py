@@ -97,7 +97,10 @@ def extend_hit(gene, threshold: int, genome_path: Path):
         return full_sequence, None
 
 
-def update_genome(genome_data: Dict[str, GeneData], genes_dir: Path):
+def update_genome(genome_data: Dict[str, GeneData],
+                  genes_dir: Path,
+                  threshold: int,
+                  genome_path: Path) -> None:
 
     for gene_name in genome_data:
 
@@ -107,7 +110,7 @@ def update_genome(genome_data: Dict[str, GeneData], genes_dir: Path):
 
         known_alleles = get_known_alleles(gene_path)
 
-        seq, name = update_locus(gene, known_alleles)
+        seq, name = update_locus(gene, known_alleles, threshold, genome_path)
 
         if seq is None and name is None:
             continue
@@ -129,7 +132,10 @@ def update_genome(genome_data: Dict[str, GeneData], genes_dir: Path):
     return genome_data
 
 
-def update_directory(results_dir: Path, genes_dir: Path):
+def update_directory(results_dir: Path,
+                     genes_dir: Path,
+                     threshold: int,
+                     genomes_path: Path):
     """
 
     :param results_dir: Directory containing JSON results from fsac
@@ -138,11 +144,13 @@ def update_directory(results_dir: Path, genes_dir: Path):
     """
     for genome in results_dir.glob('*.json'):
 
+        genome_path = genome_path.joinpath(genome.with_suffix('.fasta'))
+
         with genome.open('r') as f:
 
             genome_data = json.load(f)
 
-            update_genome(genome_data, genes_dir)
+            update_genome(genome_data, genes_diri, threshold, genome_path)
 
         with genome.open('w') as o:
 
