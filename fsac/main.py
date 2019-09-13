@@ -117,7 +117,7 @@ def call_alleles(args):
 def update_results(args):
 
     update_directory(args.json_dir, args.alleles,
-                     args.threshold, args.genomes_path)
+                     args.threshold, args.genome_dir)
 
 
 def tabulate_allele_calls(args):
