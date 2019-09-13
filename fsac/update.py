@@ -63,7 +63,7 @@ def extend_hit(gene, threshold: int, genome_path: Path):
     of the alignment causes the alignment to not be extended.
     """
 
-    difference = gene['qlen'] - gene['slen']
+    difference = gene['QueryLength'] - len(gene['SubjAln'])
 
     if difference is 0:
         # handle a complete hit
