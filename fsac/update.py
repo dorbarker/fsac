@@ -63,12 +63,14 @@ def extend_hit(gene, threshold: int, genome_path: Path):
     of the alignment causes the alignment to not be extended.
     """
 
-    difference = gene['QueryLength'] - len(gene['SubjAln'])
+    seq = gene['SubjAln'].replace('-', '')
+
+    difference = gene['QueryLength'] - len(seq)
 
     if difference is 0:
         # handle a complete hit
         # return early
-        return gene['SubjAln'], gene['MarkerMatch']
+        return seq, gene['MarkerMatch']
 
     if difference > threshold:
         # handle large discrepancy
@@ -77,22 +79,41 @@ def extend_hit(gene, threshold: int, genome_path: Path):
 
     # Open subject FASTA
     sequences_names = get_known_alleles(genome_path)
-    names_sequences = {value: key for key, value in sequences_names.items()}
+    names_sequences = {value.split()[0]: key
+                       for key, value
+                       in sequences_names.items()}
     # Find correct contig
-    contig = names_sequences[gene['sseqid']]
+    contig = names_sequences[gene['SubjName']]
 
-    # Return target_sequence
-    start = gene['sstart'] - 1
-    end = gene['sstart'] + gene['qlen']
-
-    full_sequence = contig[start : end]
-
-    if gene['ssend'] > len(contig):
+    if gene['SubjectEndIndex'] > len(contig):
         # handle contig truncation
         return None, None
 
-    assert gene['sseq'] in full_sequence
+    # Return target_sequence
+    start = gene['SubjectStartIndex'] - 1
+    end = gene['SubjectStartIndex'] + gene['QueryLength']
+
+    if not gene['ReverseComplement']:
+
+        full_sequence = contig[start : end]
+
+    else:
+
+        full_sequence = reverse_complement(contig[start : end])
+
     return full_sequence, None
+
+
+def reverse_complement(sequence: str):
+
+    complements = {
+            'A': 'T',
+            'T': 'A',
+            'G': 'C',
+            'C': 'G'
+            }
+
+    return ''.join(complements[x] for x in reversed(sequence))
 
 
 def update_genome(genome_data: Dict[str, GeneData],
