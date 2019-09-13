@@ -141,7 +141,7 @@ def update_directory(results_dir: Path,
     """
     for genome in results_dir.glob('*.json'):
 
-        genome_path = genomes_path.joinpath(genome.with_suffix('.fasta'))
+        genome_path = genomes_path.joinpath(genome.with_suffix('.fasta').name)
 
         with genome.open('r') as f:
 
