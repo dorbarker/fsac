@@ -27,15 +27,15 @@ def update_locus(gene: GeneData,
         return None, None
 
     # Already correct  - nothing to be done
-    elif gene['CorrectMarkerMatch']:
+    if gene['CorrectMarkerMatch']:
         return None, None
 
     # Contig Truncated - nothing to be done
-    elif gene['IsContigTruncation']:
+    if gene['IsContigTruncation']:
         return None, None
 
     # Non-contig trucation
-    elif gene['PercentLength'] < 1:
+    if gene['PercentLength'] < 1:
         seq, _ = extend_hit(gene, threshold, genome_path)
 
         if seq is None:
@@ -70,7 +70,7 @@ def extend_hit(gene, threshold: int, genome_path: Path):
         # return early
         return gene['SubjAln'], gene['MarkerMatch']
 
-    elif difference > threshold:
+    if difference > threshold:
         # handle large discrepancy
         # return early
         return None, None
@@ -82,7 +82,7 @@ def extend_hit(gene, threshold: int, genome_path: Path):
     contig = names_sequences[gene['sseqid']]
 
     # Return target_sequence
-    start =  gene['sstart'] - 1
+    start = gene['sstart'] - 1
     end = gene['sstart'] + gene['qlen']
 
     full_sequence = contig[start : end]
@@ -91,10 +91,8 @@ def extend_hit(gene, threshold: int, genome_path: Path):
         # handle contig truncation
         return None, None
 
-    else:
-
-        assert gene['sseq'] in full_sequence
-        return full_sequence, None
+    assert gene['sseq'] in full_sequence
+    return full_sequence, None
 
 
 def update_genome(genome_data: Dict[str, GeneData],
@@ -115,7 +113,6 @@ def update_genome(genome_data: Dict[str, GeneData],
         if seq is None and name is None:
             continue
 
-        # TODO ensure null matches are handled appropriately
         gene['Mismatches'] = 0
         gene['Gaps'] = 0
         gene['QueryName'] = name
@@ -144,13 +141,13 @@ def update_directory(results_dir: Path,
     """
     for genome in results_dir.glob('*.json'):
 
-        genome_path = genome_path.joinpath(genome.with_suffix('.fasta'))
+        genome_path = genomes_path.joinpath(genome.with_suffix('.fasta'))
 
         with genome.open('r') as f:
 
             genome_data = json.load(f)
 
-            update_genome(genome_data, genes_diri, threshold, genome_path)
+            update_genome(genome_data, genes_dir, threshold, genome_path)
 
         with genome.open('w') as o:
 
