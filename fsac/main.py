@@ -57,6 +57,16 @@ def arguments():
                         required=True,
                         help='Directory containing JSON result files')
 
+    update.add_argument('-g', '--genome-dir',
+                        type=Path,
+                        required=True,
+                        help='Directory containing FASTA formatted genomes')
+
+    update.add_argument('-t', '--threshold',
+                        type=int,
+                        default=10,
+                        help='If the hit is this number of basepairs or fewer \
+                        shorter than expected, attempt to extend the hit [10]')
 
     ### Tabulation ###
     tabulate = subparsers.add_parser('tabulate',
@@ -106,7 +116,8 @@ def call_alleles(args):
 
 def update_results(args):
 
-    update_directory(args.json_dir, args.alleles)
+    update_directory(args.json_dir, args.alleles,
+                     args.threshold, args.genome_dir)
 
 
 def tabulate_allele_calls(args):

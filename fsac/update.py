@@ -8,8 +8,10 @@ LocusData = Union[str, int, float, bool]
 GeneData = Dict[str, LocusData]
 
 
-def update_locus(gene: Dict[str, Union[str, int, bool, float]],
-                 known_alleles: Dict[str, str]) -> SeqAllele:
+def update_locus(gene: GeneData,
+                 known_alleles: Dict[str, str],
+                 threshold: int,
+                 genome_path: Path) -> SeqAllele:
     """
     Modifies known_alleles in place with if a new full-length
     allele has been discovered
@@ -34,9 +36,14 @@ def update_locus(gene: Dict[str, Union[str, int, bool, float]],
 
     # Non-contig trucation
     if gene['PercentLength'] < 1:
-        return None , None
+        seq, _ = extend_hit(gene, threshold, genome_path)
 
-    seq = gene['SubjAln'].replace('-', '')
+        if seq is None:
+            return None, None
+
+    # Full-length, previously unobserved allele
+    else:
+        seq = gene['SubjAln'].replace('-', '')
 
     try:
         allele_name = known_alleles[seq]
@@ -50,7 +57,69 @@ def update_locus(gene: Dict[str, Union[str, int, bool, float]],
     return seq, allele_name
 
 
-def update_genome(genome_data: Dict[str, GeneData], genes_dir: Path):
+def extend_hit(gene, threshold: int, genome_path: Path):
+    """Extend a BLAST hit if the alignment is less than the threshold shy of
+    the expected length. In some cases, it seems that a mismatch near the end
+    of the alignment causes the alignment to not be extended.
+    """
+
+    seq = gene['SubjAln'].replace('-', '')
+
+    difference = gene['QueryLength'] - len(seq)
+
+    if difference is 0:
+        # handle a complete hit
+        # return early
+        return seq, gene['MarkerMatch']
+
+    if difference > threshold:
+        # handle large discrepancy
+        # return early
+        return None, None
+
+    # Open subject FASTA
+    sequences_names = get_known_alleles(genome_path)
+    names_sequences = {value.split()[0]: key
+                       for key, value
+                       in sequences_names.items()}
+    # Find correct contig
+    contig = names_sequences[gene['SubjName']]
+
+    if gene['SubjectEndIndex'] > len(contig):
+        # handle contig truncation
+        return None, None
+
+    # Return target_sequence
+    start = gene['SubjectStartIndex'] - 1
+    end = gene['SubjectStartIndex'] + gene['QueryLength']
+
+    if not gene['ReverseComplement']:
+
+        full_sequence = contig[start : end]
+
+    else:
+
+        full_sequence = reverse_complement(contig[start : end])
+
+    return full_sequence, None
+
+
+def reverse_complement(sequence: str):
+
+    complements = {
+            'A': 'T',
+            'T': 'A',
+            'G': 'C',
+            'C': 'G'
+            }
+
+    return ''.join(complements[x] for x in reversed(sequence))
+
+
+def update_genome(genome_data: Dict[str, GeneData],
+                  genes_dir: Path,
+                  threshold: int,
+                  genome_path: Path) -> None:
 
     for gene_name in genome_data:
 
@@ -60,12 +129,11 @@ def update_genome(genome_data: Dict[str, GeneData], genes_dir: Path):
 
         known_alleles = get_known_alleles(gene_path)
 
-        seq, name = update_locus(gene, known_alleles)
+        seq, name = update_locus(gene, known_alleles, threshold, genome_path)
 
         if seq is None and name is None:
             continue
 
-        # TODO ensure null matches are handled appropriately
         gene['Mismatches'] = 0
         gene['Gaps'] = 0
         gene['QueryName'] = name
@@ -82,7 +150,10 @@ def update_genome(genome_data: Dict[str, GeneData], genes_dir: Path):
     return genome_data
 
 
-def update_directory(results_dir: Path, genes_dir: Path):
+def update_directory(results_dir: Path,
+                     genes_dir: Path,
+                     threshold: int,
+                     genomes_path: Path):
     """
 
     :param results_dir: Directory containing JSON results from fsac
@@ -91,11 +162,13 @@ def update_directory(results_dir: Path, genes_dir: Path):
     """
     for genome in results_dir.glob('*.json'):
 
+        genome_path = genomes_path.joinpath(genome.with_suffix('.fasta').name)
+
         with genome.open('r') as f:
 
             genome_data = json.load(f)
 
-            update_genome(genome_data, genes_dir)
+            update_genome(genome_data, genes_dir, threshold, genome_path)
 
         with genome.open('w') as o:
 

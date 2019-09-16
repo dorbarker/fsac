@@ -18,7 +18,7 @@ def blast(query_path: Path, genome_path: Path) -> pd.DataFrame:
 
     out_format = '6 qseqid sseqid pident length qstart qend sstart send qlen \
                   slen bitscore gaps sseq qseq mismatch'
-    
+
     blast_cmd = ['blastn',
                  '-query', str(query_path),
                  '-subject', str(genome_path),
@@ -154,6 +154,7 @@ def json_convert(genes_dir: Path, best_blast_hits: List[pd.Series],
             'Mismatches':           blast_hit['mismatch'],
             'QueryAln':             blast_hit['qseq'],
             'SubjAln':              blast_hit['sseq'],
+            'QueryLength':          blast_hit['qlen'],
             'Gaps':                 blast_hit['gaps'],
             'QueryName':            blast_hit['qseqid'],
             'SubjName':             blast_hit['sseqid'],
