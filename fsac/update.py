@@ -79,11 +79,11 @@ def extend_hit(gene, threshold: int, genome_path: Path):
 
     # Open subject FASTA
     sequences_names = get_known_alleles(genome_path)
-    names_sequences = {value.split()[0]: key
+    names_sequences = {str(value.split()[0]): key
                        for key, value
                        in sequences_names.items()}
     # Find correct contig
-    contig = names_sequences[gene['SubjName']]
+    contig = names_sequences[str(gene['SubjName'])]
 
     if gene['SubjectEndIndex'] > len(contig):
         # handle contig truncation
