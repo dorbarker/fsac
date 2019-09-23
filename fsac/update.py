@@ -9,7 +9,7 @@ GeneData = Dict[str, LocusData]
 
 
 def update_locus(gene: GeneData,
-                 known_alleles: Dict[str, str],
+                 gene_path: Path,
                  threshold: int,
                  genome_path: Path) -> SeqAllele:
     """
@@ -45,6 +45,8 @@ def update_locus(gene: GeneData,
     else:
         seq = gene['SubjAln'].replace('-', '')
 
+    known_alleles = get_known_alleles(gene_path)
+
     try:
         allele_name = known_alleles[seq]
 
@@ -53,6 +55,8 @@ def update_locus(gene: GeneData,
         last_allele = sorted(known_alleles.values(), key=int)[-1]
 
         allele_name = str(int(last_allele) + 1)
+
+        update_known_alleles(name, seq, gene_path)
 
     return seq, allele_name
 
@@ -127,9 +131,7 @@ def update_genome(genome_data: Dict[str, GeneData],
 
         gene_path = (genes_dir / gene_name).with_suffix('.fasta')
 
-        known_alleles = get_known_alleles(gene_path)
-
-        seq, name = update_locus(gene, known_alleles, threshold, genome_path)
+        seq, name = update_locus(gene, gene_path, threshold, genome_path)
 
         if seq is None and name is None:
             continue
@@ -142,10 +144,6 @@ def update_genome(genome_data: Dict[str, GeneData],
         gene['CorrectMarkerMatch'] = True
 
         genome_data[gene_name] = gene
-
-        if seq not in known_alleles:
-
-            update_known_alleles(name, seq, gene_path)
 
     return genome_data
 
