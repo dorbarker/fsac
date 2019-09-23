@@ -44,6 +44,11 @@ optional arguments:
                         Alleles directory
   -j JSON_DIR, --json-dir JSON_DIR
                         Directory containing JSON result files
+  -g GENOME_DIR, --genome-dir GENOME_DIR
+                        Directory containing FASTA formatted genomes
+  -t THRESHOLD, --threshold THRESHOLD
+                        If the hit is this number of basepairs or fewer
+                        shorter than expected, attempt to extend the hit [10]
 ```
 
 ```bash
