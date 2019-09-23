@@ -36,7 +36,7 @@ optional arguments:
 
 ```bash
 $ fsac update --help
-usage: fsac update [-h] -a ALLELES -j JSON_DIR
+usage: fsac update [-h] -a ALLELES -j JSON_DIR -g GENOME_DIR [-t THRESHOLD]
 
 optional arguments:
   -h, --help            show this help message and exit
