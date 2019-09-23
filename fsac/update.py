@@ -56,7 +56,7 @@ def update_locus(gene: GeneData,
 
         allele_name = str(int(last_allele) + 1)
 
-        update_known_alleles(name, seq, gene_path)
+        update_known_alleles(allele_name, seq, gene_path)
 
     return seq, allele_name
 
