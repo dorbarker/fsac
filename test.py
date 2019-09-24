@@ -1,6 +1,6 @@
 import unittest
 
-from src import update
+from fsac import update
 
 class TestUpdate(unittest.TestCase):
 

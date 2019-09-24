@@ -114,7 +114,8 @@ def reverse_complement(sequence: str):
             'A': 'T',
             'T': 'A',
             'G': 'C',
-            'C': 'G'
+            'C': 'G',
+            'N': 'N'
             }
 
     return ''.join(complements[x] for x in reversed(sequence))
@@ -136,6 +137,7 @@ def update_genome(genome_data: Dict[str, GeneData],
         if seq is None and name is None:
             continue
 
+        gene['SubjAln'] = seq
         gene['Mismatches'] = 0
         gene['Gaps'] = 0
         gene['QueryName'] = name
