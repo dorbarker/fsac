@@ -141,7 +141,10 @@ def update_genome(genome_data: Dict[str, GeneData],
         gene['Mismatches'] = 0
         gene['Gaps'] = 0
         gene['QueryName'] = name
+        # TODO fix this quirk where 1 is 100% in PercentLength
+        #      and 100 is 100% in PercentIdentity
         gene['PercentIdentity'] = 100
+        gene['PercentLength'] = 1
         gene['MarkerMatch'] = name
         gene['CorrectMarkerMatch'] = True
 
