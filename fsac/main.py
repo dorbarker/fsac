@@ -1,5 +1,6 @@
 import argparse
 import logging
+import os
 import sys
 from pathlib import Path
 
@@ -8,6 +9,15 @@ from .allele_call import allele_call
 from .update import update_directory
 from .tabulate import tabulate_calls
 
+# Ensure numpy, via pandas, doesn't use more than 1 thread.
+# If numpy uses multiple threads, it brings no performance benefit in this
+# case, but can cause problems if you're running lots of jobs
+# on a single HPC node
+for env_var in ('OPENBLAS_NUM_THREADS',
+                'OMP_NUM_THREADS',i
+                'MKL_NUM_THREADS',
+                'NUMEXPR_NUM_THREADS'):
+    os.environ[env_var] = 1
 
 def arguments():
 
