@@ -1,4 +1,5 @@
 import argparse
+import logging
 import sys
 from pathlib import Path
 
@@ -13,8 +14,8 @@ def arguments():
     parser = argparse.ArgumentParser()
 
     parser.add_argument('-v', '--version',
-                        action='store_true',
-                        help='Print version and exit')
+                        action='version',
+                        version=f'{parser.prog} {__version__}')
 
     parser.set_defaults(func=None)
     subparsers = parser.add_subparsers(title='Commands')
@@ -91,10 +92,6 @@ def arguments():
 
     args = parser.parse_args()
 
-    if args.version:
-        print('fsac', __version__)
-        sys.exit(0)
-
     if args.func is None:
         parser.print_help()
         sys.exit(0)
@@ -106,6 +103,12 @@ def main():
 
     args = arguments()
 
+    logging.basicConfig(datefmt='%Y-%m-%d %H:%M',
+                        format='%(asctime)s - %(levelname)s: %(message)s',
+                        stream=sys.stderr,
+                        level=logging.INFO)
+
+    logging.info('Running %s', args.func.__name__)
     args.func(args)
 
 

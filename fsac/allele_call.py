@@ -16,6 +16,8 @@ def allele_call(genome: Path, genes: Path, output: Path) -> None:
 
 def blast(query_path: Path, genome_path: Path) -> pd.DataFrame:
 
+    logging.info('BLASTing locus %s in subject %s', query_path, gene_path)
+
     out_format = '6 qseqid sseqid pident length qstart qend sstart send qlen \
                   slen bitscore gaps sseq qseq mismatch'
 
@@ -81,7 +83,6 @@ def filter_result(blast_output: pd.DataFrame) -> Optional[pd.Series]:
 
     # Perfect match
     elif any(blast_output['correct']):
-
         best = blast_output[blast_output['correct']]
 
     # Highest bitscore
@@ -175,3 +176,5 @@ def json_convert(genes_dir: Path, best_blast_hits: List[pd.Series],
 
     with json_out.open('w') as j:
         json.dump(results, j, indent=4)
+        logging.info('Wrote results to %s', json_out)
+
