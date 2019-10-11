@@ -1,4 +1,5 @@
 import json
+import logging
 import subprocess
 import io
 import re
@@ -16,7 +17,7 @@ def allele_call(genome: Path, genes: Path, output: Path) -> None:
 
 def blast(query_path: Path, genome_path: Path) -> pd.DataFrame:
 
-    logging.info('BLASTing locus %s in subject %s', query_path, gene_path)
+    logging.info('BLASTing locus %s in subject %s', query_path, genome_path)
 
     out_format = '6 qseqid sseqid pident length qstart qend sstart send qlen \
                   slen bitscore gaps sseq qseq mismatch'

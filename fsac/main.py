@@ -14,10 +14,10 @@ from .tabulate import tabulate_calls
 # case, but can cause problems if you're running lots of jobs
 # on a single HPC node
 for env_var in ('OPENBLAS_NUM_THREADS',
-                'OMP_NUM_THREADS',i
+                'OMP_NUM_THREADS',
                 'MKL_NUM_THREADS',
                 'NUMEXPR_NUM_THREADS'):
-    os.environ[env_var] = 1
+    os.environ[env_var] = '1'
 
 def arguments():
 
