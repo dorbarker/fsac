@@ -109,10 +109,16 @@ def extend_hit(gene, threshold: int, genome_path: Path):
 
     else:
 
-        full_sequence = reverse_complement(contig[start : end])
+        try:
+            full_sequence = reverse_complement(contig[start : end])
+
+        except KeyError:
+            msg = 'Cannot assign allele due to ambiguous subject sequence'
+            logging.info(msg)
+            return None, None
 
     logging.info('Extended hit to length %s, expected %s',
-                 len(full_sequence), gene['QueryLength'])
+                 len(full_sequence) - 1, gene['QueryLength'])
     return full_sequence, None
 
 
@@ -123,7 +129,6 @@ def reverse_complement(sequence: str):
             'T': 'A',
             'G': 'C',
             'C': 'G',
-            'N': 'N'
             }
 
     return ''.join(complements[x] for x in reversed(sequence))
