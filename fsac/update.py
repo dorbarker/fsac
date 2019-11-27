@@ -2,6 +2,7 @@ from typing import Dict, Optional, Tuple, Union
 from pathlib import Path
 from contextlib import suppress
 import json
+import logging
 
 SeqAllele = Tuple[Optional[str], Optional[str]]
 LocusData = Union[str, int, float, bool]
@@ -67,19 +68,24 @@ def extend_hit(gene, threshold: int, genome_path: Path):
     of the alignment causes the alignment to not be extended.
     """
 
+    logging.info('Extending hit for %s in %s', gene['QueryName'], genome_path)
     seq = gene['SubjAln'].replace('-', '')
 
     difference = gene['QueryLength'] - len(seq)
 
     if difference is 0:
+        logging.info('Difference is 0. Skipping')
         # handle a complete hit
         # return early
         return seq, gene['MarkerMatch']
 
     if difference > threshold:
+        logging.info('Difference (%s) is greater than %s. Skipping',
+                     difference, threshold)
         # handle large discrepancy
         # return early
         return None, None
+
 
     # Open subject FASTA
     sequences_names = get_known_alleles(genome_path)
@@ -103,8 +109,16 @@ def extend_hit(gene, threshold: int, genome_path: Path):
 
     else:
 
-        full_sequence = reverse_complement(contig[start : end])
+        try:
+            full_sequence = reverse_complement(contig[start : end])
 
+        except KeyError:
+            msg = 'Cannot assign allele due to ambiguous subject sequence'
+            logging.info(msg)
+            return None, None
+
+    logging.info('Extended hit to length %s, expected %s',
+                 len(full_sequence) - 1, gene['QueryLength'])
     return full_sequence, None
 
 
@@ -115,7 +129,6 @@ def reverse_complement(sequence: str):
             'T': 'A',
             'G': 'C',
             'C': 'G',
-            'N': 'N'
             }
 
     return ''.join(complements[x] for x in reversed(sequence))

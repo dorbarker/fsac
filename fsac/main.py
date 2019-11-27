@@ -1,4 +1,6 @@
 import argparse
+import logging
+import os
 import sys
 from pathlib import Path
 
@@ -7,14 +9,23 @@ from .allele_call import allele_call
 from .update import update_directory
 from .tabulate import tabulate_calls
 
+# Ensure numpy, via pandas, doesn't use more than 1 thread.
+# If numpy uses multiple threads, it brings no performance benefit in this
+# case, but can cause problems if you're running lots of jobs
+# on a single HPC node
+for env_var in ('OPENBLAS_NUM_THREADS',
+                'OMP_NUM_THREADS',
+                'MKL_NUM_THREADS',
+                'NUMEXPR_NUM_THREADS'):
+    os.environ[env_var] = '1'
 
 def arguments():
 
     parser = argparse.ArgumentParser()
 
     parser.add_argument('-v', '--version',
-                        action='store_true',
-                        help='Print version and exit')
+                        action='version',
+                        version=f'{parser.prog} {__version__}')
 
     parser.set_defaults(func=None)
     subparsers = parser.add_subparsers(title='Commands')
@@ -91,10 +102,6 @@ def arguments():
 
     args = parser.parse_args()
 
-    if args.version:
-        print('fsac', __version__)
-        sys.exit(0)
-
     if args.func is None:
         parser.print_help()
         sys.exit(0)
@@ -106,6 +113,12 @@ def main():
 
     args = arguments()
 
+    logging.basicConfig(datefmt='%Y-%m-%d %H:%M',
+                        format='%(asctime)s - %(levelname)s: %(message)s',
+                        stream=sys.stderr,
+                        level=logging.INFO)
+
+    logging.info('Running %s', args.func.__name__)
     args.func(args)
 
 
