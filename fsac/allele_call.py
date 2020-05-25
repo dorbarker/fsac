@@ -23,6 +23,7 @@ def blast(query_path: Path, genome_path: Path) -> pd.DataFrame:
                   slen bitscore gaps sseq qseq mismatch'
 
     blast_cmd = ['blastn',
+                 '-ungapped',
                  '-query', str(query_path),
                  '-subject', str(genome_path),
                  '-outfmt', out_format]
