@@ -1,4 +1,6 @@
 import argparse
+import itertools
+import json
 import logging
 import os
 import sys
@@ -6,7 +8,7 @@ from pathlib import Path
 
 from . import __version__
 from .allele_call import allele_call
-from .update import update_directory
+from .update import update_directory, get_known_alleles
 from .tabulate import tabulate_calls
 
 # Ensure numpy, via pandas, doesn't use more than 1 thread.
@@ -122,18 +124,81 @@ def main():
     args.func(args)
 
 
+def validate_fasta(fasta_path: Path):
+
+    if not fasta_path.is_file():
+        return (1, f"{fasta_path} does not exist")
+
+    try:
+        get_known_alleles(fasta_path)
+
+    except UnboundLocalError:
+        return (1, f"{fasta_path} is not in FASTA format")
+
+    except UnicodeDecodeError:
+        return (1, f"{fasta_path} is not in FASTA format")
+
+    return (0, "")
+
+
+def validate_json(json_path: Path):
+
+    if not json_path.is_file():
+        return (1, f"{json_path} does not exist")
+    try:
+        with json_path.open("r") as f:
+            data = json.load(f)
+            return (0, "")
+
+    except json.decoder.JSONDecodeError:
+        return (1, f"{json_path} is not a valid JSON file")
+
+
+def validate_directory(dir_path: Path, validation_method):
+
+    if not dir_path.is_dir():
+        return [(1, f"{dir_path} is not a directory")]
+
+    results = [validation_method(p) for p in dir_path.glob("*")]
+
+    return results
+
+
+def validate(*args):
+
+    errors, messages = zip(*itertools.chain(*args))
+
+    n_errors = sum(errors)
+
+    if n_errors > 0:
+
+        print(f"Got {n_errors} input errors:")
+        print('\n'.join(filter(None, messages)))
+        print("Exiting.")
+        sys.exit(n_errors)
+
+
 def call_alleles(args):
+
+    validate([validate_fasta(args.input)],
+             validate_directory(args.alleles, validate_fasta))
 
     allele_call(args.input, args.alleles, args.output)
 
 
 def update_results(args):
 
+    validate(validate_directory(args.json_dir, validate_json),
+             validate_directory(args.alleles, validate_fasta),
+             validate_directory(args.genome_dir, validate_fasta))
+
     update_directory(args.json_dir, args.alleles,
                      args.threshold, args.genome_dir)
 
 
 def tabulate_allele_calls(args):
+
+    validate(validate_directory(args.json_dir, validate_json))
 
     tabulate_calls(args.json_dir, args.output, args.delimiter)
 
